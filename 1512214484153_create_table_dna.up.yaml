@@ -1,0 +1,8 @@
+- args:
+    sql: CREATE TABLE "dna"("name" text NOT NULL, "acc_no" text NOT NULL, "len" text
+      NOT NULL, "total_genes" numeric NOT NULL, "type" text NOT NULL, "status" text
+      NOT NULL, "tax_no" integer NOT NULL, PRIMARY KEY ("name") )
+  type: run_sql
+- args:
+    name: dna
+  type: add_existing_table_or_view

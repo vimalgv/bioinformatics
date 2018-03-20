@@ -1,0 +1,380 @@
+
+<html>
+<head>
+<title>Bio-informatics</title>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.1/Chart.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/0.5.0/chartjs-plugin-zoom.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script type="text/javascript" src="https://rawgit.com/LeaVerou/awesomplete/gh-pages/awesomplete.min.js"></script>
+
+<script src="jqu.js"></script>
+<script src="search_engine.js"></script>
+<script src="needleman.js"></script>
+  
+  <script src="novalfast_algorith.js"></script>
+  <script type="text/javascript" src="./jsphylosvg/raphael-min.js" ></script> 
+  <script type="text/javascript" src="./jsphylosvg/jsphylosvg-min.js"></script> 
+  <script type="text/javascript">
+$(document).ready(function(){
+
+    var homepagechart=$("#homepagedna");
+        var Homepagechart=new Chart(homepagechart,{
+          type:'line',
+          
+          data:{
+          
+            labels:['0','1','2','3','4','5','6','7','8','9','10'],
+            datasets:[{
+                    label:"DNA UPPERSTRAND",
+                    borderColor: 'rgb(0, 0, 255)',
+
+                    data:[2,1,0,1,2,1,0,1,2],
+                    fill:"true",
+                    borderWidth:8
+            },{
+                    label:"DNA UPPERSTRAND",
+                    borderColor: 'rgb(0, 0, 150)',
+                    data:[0,1,2,1,0,1,2,1,0],
+                    fill:"true",
+                    borderWidth:8
+            }          
+            ]
+          }
+        });
+
+
+
+});
+
+
+function name_acc(){
+choice=(document.getElementById("selectname").value);
+var name1=document.getElementById("serachval").value;
+//window.alert([name1,choice]);
+if(choice=="name")
+{$.ajax({
+  url: "https://data.crookedly98.hasura-app.io/v1/query",
+  contentType: "application/json",
+  data: JSON.stringify({
+      "type": "select",
+      "args": {
+            "table": "dna",
+            "columns": [
+                  "acc_no"
+            ],
+            "where": {
+                  "name": {
+                        "$eq": name1
+                  }
+            }
+      }
+  }),
+  type: "POST",
+  dataType: "json"
+}).done(function(json) {
+//window.alert("before");
+window.alert(json[0]["acc_no"]);
+gene_sum(json[0]["acc_no"]);
+  // Handle Response
+}).fail(function(xhr, status, errorThrown) {
+  console.log("Error: " + errorThrown);
+  console.log("Status: " + status);
+  console.dir(xhr);
+});
+}
+else gene_detail(name1);
+}
+
+function gene_detailfasta(gene_id){
+          //alert(gene_id);
+          //$("#fastadisp").hide();
+          $.post('https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=sequences&id='+gene_id+'&rettype=fasta&retmode=text',function(data){
+              var bp=0;
+              data=data.split('\n');
+              for(var i=0;i<data.length-2;i++){
+              if(i==0){ 
+              $("#fastadisp").append("<p>"+data[i]+"</p><br>")
+              $("#fastadisp").append("<b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0bp - 10bp&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;11bp - 20bp&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;21bp - 30bp&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;31bp - 40bp&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;41bp - 50bp&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;51bp - 60bp&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;61bp - 70bp&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</b><br>")
+              }
+              else{
+                  temp=[]
+                  temp=data[i].split('');
+                  var linedata=bp+"bp - "+(bp+temp.length)+"bp";
+                  for(var w=linedata.length;w<=15;w++)
+                    linedata="<b>&nbsp;&nbsp;</b>"+linedata;
+                  $("#fastadisp").append("<b>"+linedata+"</b>&emsp;")
+                  bp+=temp.length;
+                  for(var z=0;z<temp.length;z++)
+                    {
+
+                      {if(temp[z]=='A')
+                      $("#fastadisp").append("<span style='color:red'>"+temp[z]+"</span>")
+                      
+                      else if(temp[z]=='T')
+                      $("#fastadisp").append("<span style='color:green'>"+temp[z]+"</span>")
+                      
+                      else if(temp[z]=='C')
+                      $("#fastadisp").append("<span style='color:Blue'>"+temp[z]+"</span>")
+                      
+                      else if(temp[z]=='G')
+                      $("#fastadisp").append("<span style='color:orange'>"+temp[z]+"</span>")
+                      
+                      else
+                        $("#fastadisp").append("<span style='color:black'>"+temp[z]+"</span>")
+                      }
+                      if((z+1)%10==0 && z!=0)
+                        $("#fastadisp").append("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;")
+
+
+
+                    }
+                    $("#fastadisp").append("<br>")
+                    
+                    
+                }
+              }
+          });
+          return true;
+        }
+    function gene_detailgb(gene_id){
+          //alert(gene_id);
+         // $("#accdisp").hide();
+          $.post('https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id='+gene_id+'&rettype=gb&retmode=text',function(data){
+              //window.alert(data);
+              data=data.split('\n');
+              for(var i=0;i<data.length;i++){
+              $("#gbdisp").append("<p>"+data[i]+"</p>")
+              }
+          });
+          return true;
+        }
+    
+function gene_detail(gene_id){
+        $("#fastadisp").empty();
+        $("#gbdisp").empty();
+         gene_detailgb(gene_id); 
+         gene_detailfasta(gene_id);
+          return true;
+        }
+
+
+function gene_sum(genes){
+          var n=genes.split(',');
+          n=n.length;
+          $.post('https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=nucleotide&id='+genes+'&retmode=json',function(data){
+
+              for(i=0;i<n;i++){
+                $("#accdisp").append("<a href='#gbf' onclick='gene_detail(\""+data['result'][data['result']['uids'][i]]['caption']+"\")'>"+data['result'][data['result']['uids'][i]]['title']+"</a><br>")
+               // alert("<a href='#' onclick='return gene_detail(\""+data['result'][data['result']['uids'][i]]['caption']+"\")'>"+data['result'][data['result']['uids'][i]]['title']+"</a><br>")
+              }
+        });
+        }
+
+
+
+
+  function validate()
+  {
+  
+    var val=document.getElementById("serachbyacc").value;
+    var val1=document.getElementById("serachbyseq").value;
+    //window.alert(val);
+    //window.alert(val1);
+    if(val!=""&&val1=="")
+    {
+    novalfastdata(val);
+    }
+    else if(val==""&&val1!="")
+    {
+    novalfast(val1);
+    }
+    else
+    window.alert("error");
+  }
+  function nmbtn()
+  {
+  //alert('hi');
+  var val=document.getElementById("serachbyacc1").value;
+  var val1=document.getElementById("serachbyseq1").value;
+  //window.alert(val);
+  window.alert(val1);
+  if(val!=""&&val1=="")
+  {
+  needlemandata(val);
+  }
+  else if(val==""&&val1!="")
+  {
+  needleman(val1);
+  }
+  else
+  window.alert("error");
+  return true;
+  }
+
+  </script>
+<script>
+
+    
+
+function id_def(genes){
+          var n=genes.split(',');
+          n=n.length;
+          $.post('https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=nucleotide&id='+genes+'&retmode=json',function(data){
+            genes=genes.split(',');
+              for(i=0;i<n;i++){
+                $("#accdisp").append("<b>"genes[i]+":</b>&emsp;&emsp;"+data['result'][data['result']['uids'][i]]['title']+"<br>")
+                //alert("onclick='return gene_detail(\""+data['result'][data['result']['uids'][i]]['caption']+"\")'>"+data['result'][data['result']['uids'][i]]['title']+"</a><br>")
+              }
+        });
+        }
+
+</script>
+
+
+<link rel="stylesheet" type="text/css" href="https://rawgit.com/LeaVerou/awesomplete/gh-pages/awesomplete.css">
+</head>
+
+
+<body>
+  <header>
+      <center><h1 style="background-color: lightblue;font-size: 50px">Bio-Informatics</h1></center>
+  </header>
+
+  <div class="contanier" id="cont1" style="margin-left: 50px">
+    <br><br>
+    <div class ="row align-items-center justify-content-center" style="border: 1px solid black">
+         
+         
+         <div class ="col-sm-4">
+
+             <select id="selectname" onchange="changed()">
+              <option value="name">search by name</option>
+              <option value="acc_no">search  y acc-no</option>
+            </select>
+            
+            <input type="text" name="serachval" id="serachval">
+            <span id="searchbox"><input type="button" id="search" value="search" onclick="name_acc()"></span>
+            <br>
+            <input type="button" id="FOGSAA" value="Needle Man">
+            <input type="button" id="tree" value="Phylogentic Tree">
+         
+         </div>
+
+         <div class="col-sm-8" >
+            <canvas id="homepagedna" height="30" width="150"></canvas>
+          </div>
+
+    </div>
+
+  <div class ="row" id="sr">
+          <div class ="col-sm-12" id="accdisp">
+          <h3>Search Result</h3>
+        </div>
+  </div>
+
+  <div class ="row" id="gbf">
+      <div class ="col-sm-4" id="gbdisp">
+          <h4>GenBank Result</h4>
+      </div>
+      
+      <div class ="col-sm-8" id="fastadisp">
+        <h4>FASTA(GENOME sequence)</h4>
+      </div>
+  </div>
+
+  <div class="row">
+        <div class="col-sm-12">
+          <br>
+          <p>This portal allows to user to search genes of organisms like google search engine, later the actual sequence of data is retreived from ncbi
+          </p>
+          <p>
+            <h3>Phylogentic Tree</h3> this is used to generate Phylogentic Tree
+            using noval fast algorithm, using this method we can can Phylogentic Tree of 100 species in few seconds
+
+            example: copy "NZ_CDNC01000037.1,NZ_CDNC01000038.1,NZ_CDNC01000039.1,NZ_CDNC01000040.1,NZ_CDNC01000041.1,NZ_CDNC01000042.1,NZ_CDNC01000043.1,NZ_CDNC01000044.1" in the Phylogentic Tree search by acces number. 
+          </p>
+
+          <p>
+            To veiw the visual effects of similarities of to sequences needle man 
+            algorithm is used and the the result is provided in line graph.
+            to view click on needleman algorithm and use folling ids to do the comaprison "NZ_CDNC01000037.1,NZ_CDNC01000038.1"
+          </p>
+      </div>
+  </div>
+</div>
+
+<div class="contanier" id="cont2" style="margin-left: 100px">
+    <div class ="row">
+          <div class ="col-sm-6">
+                <h3>Compare by Association number </h3>
+                <input type="text" id="serachbyacc">
+                <br>
+         </div>
+    </div>
+
+
+    <div class ="row">
+          <div class ="col-sm-6">
+                <br>
+                <textarea rows="4" cols="40" id="serachbyseq">
+                </textarea>
+                <br>
+                <input type="button" id="valid" value="submit" onclick="return validate()">
+        </div>
+  </div>
+  
+  <div class ="row">
+     
+          <h3>Phylogentic Tree</h3>
+     
+          <div class ="col-sm-12" id="treearea">
+          </div>
+    </div>
+</div>
+
+
+
+<div class="contanier" id="cont3" style="margin-left: 100px">
+      <div class ="row">
+          <div class ="col-sm-6">
+                <h3>Compare by Acc_no/Sequence</h3>
+                <input type="text" id="serachbyacc1">
+                <br><br>
+                <textarea rows="4" cols="40" id="serachbyseq1">
+                </textarea>
+                <br>
+                <input type="button" id="perfnm" value="submit" onclick="return nmbtn()">
+          </div>
+          <div class="col-sm-6"></div>
+      </div>
+
+      <div class ="row">
+            <div class="col-sm-8" style="overflow-x:scroll; ">
+
+                <div class ="col-sm-4" id="DNAgraph">
+                  <canvas id="graphdisp" height="500" width="1500"></canvas>
+                </div>
+
+            </div>   
+          
+         
+      </div>
+      <br><br><br>
+      <div class="row">
+          
+           <div class="col-sm-12" id="dnasequences">
+           <h3>Sequence</h3>
+            </div>
+     
+      </div>
+</div>
+
+
+
+
+</body>
+</html>

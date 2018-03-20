@@ -1,0 +1,14 @@
+- args:
+    permission:
+      columns:
+      - tax_no
+      - name
+      - acc_no
+      - len
+      - total_genes
+      - type
+      - status
+      filter: {}
+    role: anonymous
+    table: dna
+  type: create_select_permission
